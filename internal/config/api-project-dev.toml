@@ -1,0 +1,16 @@
+[api]
+addr = ":8000"
+
+[log]
+level = "debug"
+
+[storage]
+login = "login"
+password = "12345"
+host = "postgresdb"
+dbname = "postgres"
+query_timeout = "5s"
+max_open_connections = 25
+max_lifetime_connections = "6s"
+migration_enable = true
+migration_version = 2

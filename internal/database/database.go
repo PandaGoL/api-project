@@ -1,25 +1,11 @@
 package database
 
-import (
-	"fmt"
+import "github.com/PandaGoL/api-project/internal/database/postgres/models"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-)
-
-func InitDatabase() (*gorm.DB, error) {
-	fmt.Println("Connection to DB")
-	dbUsername := "postgress"
-	dbPassword := "12345"
-	dbHost := "localhost"
-	dbTable := "postgres"
-	dbPort := "5432"
-
-	connStr := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", dbHost, dbPort, dbUsername, dbTable, dbPassword)
-	db, err := gorm.Open(postgres.Open(connStr))
-	if err != nil {
-		return db, err
-	}
-
-	return db, nil
+type Storage interface {
+	AddOrUpdateUser(user models.User) (scanUser *models.User, err error)
+	GetUsers() (users []*models.User, count int, err error)
+	GetUser(userID string) (user *models.User, err error)
+	DeleteUser(userID string) error
+	Close()
 }
