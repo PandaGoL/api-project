@@ -16,7 +16,6 @@ import (
 	"github.com/PandaGoL/api-project/pkg/options"
 	"github.com/PandaGoL/api-project/pkg/recovery"
 	"github.com/PandaGoL/api-project/pkg/syslog"
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,9 +33,9 @@ var (
 )
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Warn(".env file not found")
-	}
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Warn(".env file not found")
+	// }
 	flag.StringVar(&configName, "config", "api-project", "configuration file name")
 	exitSignal = make(chan bool)
 }
