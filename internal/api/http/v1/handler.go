@@ -6,18 +6,19 @@ import (
 
 	"github.com/PandaGoL/api-project/internal/api/http/types"
 	"github.com/PandaGoL/api-project/internal/database/postgres/models"
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 func (rout *Router) AddOrUpdateUser(w http.ResponseWriter, r *http.Request) {
-
+	requestId := r.Context().Value("request_id").(string)
 	rec := models.User{}
 	err := json.NewDecoder(r.Body).Decode(&rec)
 	if err != nil {
 		w.WriteHeader(400)
 		return
 	}
-	resp, err := rout.Service.AddOrUpdateUser(rec)
+	resp, err := rout.Service.AddOrUpdateUser(requestId, rec)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -33,8 +34,8 @@ func (rout *Router) AddOrUpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rout *Router) GetUsers(w http.ResponseWriter, r *http.Request) {
-
-	resp, count, err := rout.Service.GetUsers()
+	requestId := r.Context().Value("request_id").(string)
+	resp, count, err := rout.Service.GetUsers(requestId)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -55,9 +56,9 @@ func (rout *Router) GetUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rout *Router) GetUser(w http.ResponseWriter, r *http.Request) {
-
-	id := r.FormValue("user_id")
-	resp, err := rout.Service.GetUser(id)
+	requestId := r.Context().Value("request_id").(string)
+	id := mux.Vars(r)["user_id"]
+	resp, err := rout.Service.GetUser(requestId, id)
 	if err != nil {
 		w.WriteHeader(400)
 		return
@@ -73,9 +74,9 @@ func (rout *Router) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rout *Router) DeleteUser(w http.ResponseWriter, r *http.Request) {
-
+	requestId := r.Context().Value("request_id").(string)
 	id := r.FormValue("user_id")
-	err := rout.Service.DeleteUser(id)
+	err := rout.Service.DeleteUser(requestId, id)
 	if err != nil {
 		w.WriteHeader(400)
 		return

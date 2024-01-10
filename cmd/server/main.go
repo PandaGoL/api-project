@@ -10,11 +10,19 @@ import (
 
 	api "github.com/PandaGoL/api-project/internal/api/http"
 	"github.com/PandaGoL/api-project/internal/database/postgres"
+	m "github.com/PandaGoL/api-project/internal/metrics"
+	"github.com/PandaGoL/api-project/internal/services/system"
 	"github.com/PandaGoL/api-project/internal/services/user"
 	"github.com/PandaGoL/api-project/pkg/options"
+	"github.com/PandaGoL/api-project/pkg/recovery"
 	"github.com/PandaGoL/api-project/pkg/syslog"
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
+)
+
+// Блок переменных приложения
+const (
+	// applicationName - название приложения.
+	applicationName = "api-project"
 )
 
 var (
@@ -25,9 +33,9 @@ var (
 )
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Warn(".env file not found")
-	}
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Warn(".env file not found")
+	// }
 	flag.StringVar(&configName, "config", "api-project", "configuration file name")
 	exitSignal = make(chan bool)
 }
@@ -47,22 +55,26 @@ func Run() error {
 		return err
 	}
 
-	log.Debugf("-------> DNS: %s: \n", opt.DB.DSN())
+	metrics := m.New(applicationName)
 
-	db, err := postgres.New(opt.DB)
+	_ = recovery.CreateRecovery(nil, metrics)
+
+	db, err := postgres.New(opt.DB, metrics)
 	if err != nil {
 		log.Fatalf("DB error: %s", err)
 		return nil
 	}
+
 	err = db.Migrations()
 	if err != nil {
 		log.Fatalf("Migration error: %s", err)
 		return nil
 	}
 
-	userService := user.NewUserService(db)
+	userService := user.NewUserService(db, metrics)
+	systemService := system.Init(db.GetPool())
 
-	apiServer = api.Init(userService)
+	apiServer = api.Init(userService, systemService)
 	go func(srv *api.Server) {
 		if err := srv.Serve(); err != nil && err != http.ErrServerClosed {
 			log.WithError(err).Fatal("Unable to server HTTP API")

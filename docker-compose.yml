@@ -3,17 +3,17 @@ services:
   app:
     # container_name: api-project-app
     build:
-      context: .
+      # context: .
       dockerfile: Dockerfile
     environment:
-      # - POSTGRES_USER=${DB_USER}
-      # - POSTGRES_PASSWORD=${DB_PASSWORD}
-      # - POSTGRES_DB=${DB_NAME}
-      # - DATABASE_HOST=${DB_HOST}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_HOST=${DB_HOST}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - DATABASE_HOST=${DB_HOST}
+      # - DB_USER=${DB_USER}
+      # - DB_PASSWORD=${DB_PASSWORD}
+      # - DB_NAME=${DB_NAME}
+      # - DB_HOST=${DB_HOST}
     env_file:
       - .env
     tty: true
@@ -26,7 +26,6 @@ services:
       - postgresdb
     networks:
       - learning
-
   postgresdb:
     restart: always
     # image: postgres:latest

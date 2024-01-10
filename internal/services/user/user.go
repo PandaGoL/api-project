@@ -1,15 +1,18 @@
 package user
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/PandaGoL/api-project/internal/database"
 	"github.com/PandaGoL/api-project/internal/database/postgres/models"
+	"github.com/PandaGoL/api-project/internal/metrics"
 	"github.com/sirupsen/logrus"
 )
 
 type UserService struct {
 	s database.Storage
+	m metrics.IMetrics
 }
 
 type User struct {
@@ -21,9 +24,11 @@ type User struct {
 	Phone     string
 }
 
-func NewUserService(db database.Storage) *UserService {
-	us := &UserService{}
-	us.s = db
+func NewUserService(db database.Storage, m metrics.IMetrics) *UserService {
+	us := &UserService{
+		s: db,
+		m: m,
+	}
 	return us
 }
 
@@ -38,52 +43,65 @@ func (u *User) ToMap() map[string]interface{} {
 	return fields
 }
 
-func (us *UserService) AddOrUpdateUser(user models.User) (*models.User, error) {
+func (us *UserService) AddOrUpdateUser(requestId string, user models.User) (*models.User, error) {
 	bt := time.Now()
-	logrus.WithField("time_start", bt).WithFields(user.ToMap()).Info("Start AddorUpdateUser request: ")
+	us.m.AddHTTPIncomingRequests("/v1/api/adduser")
+
+	logrus.WithField("request_id", requestId).WithField("time_start", bt).WithFields(user.ToMap()).Info("Start AddorUpdateUser request: ")
 	resp := new(models.User)
 	resp, err := us.s.AddOrUpdateUser(user)
 	if err != nil {
-		logrus.Errorf("Error in AddOrUpdateUser: %s", err)
+		us.m.AddHTTPIncomingResponses("/v1/api/adduser", http.StatusInternalServerError, time.Since(bt))
+		logrus.Errorf("request_id: %s Error in AddOrUpdateUser: %s", requestId, err)
 		return resp, err
 	}
-	logrus.WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish AddorUpdateUser request")
+	us.m.AddHTTPIncomingResponses("/v1/api/adduser", http.StatusOK, time.Since(bt))
+	logrus.WithField("request_id", requestId).WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish AddorUpdateUser request")
 	return resp, nil
 }
 
-func (us *UserService) GetUsers() ([]*models.User, int, error) {
+func (us *UserService) GetUsers(requestId string) ([]*models.User, int, error) {
 	bt := time.Now()
-	logrus.WithField("time_start", bt).Info("Start GetUsers request")
+	us.m.AddHTTPIncomingRequests("/v1/api/users")
+	logrus.WithField("request_id", requestId).WithField("time_start", bt).Info("Start GetUsers request")
 	resp, count, err := us.s.GetUsers()
 	if err != nil {
-		logrus.Errorf("Error in GetUsers: %s", err)
+		us.m.AddHTTPIncomingResponses("/v1/api/users", http.StatusInternalServerError, time.Since(bt))
+		logrus.Errorf("request_id: %s Error in GetUsers: %s", requestId, err)
 		return resp, 0, err
 	}
-	logrus.WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish GetUsers request")
+	us.m.AddHTTPIncomingResponses("/v1/api/users", http.StatusOK, time.Since(bt))
+	logrus.WithField("request_id", requestId).WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish GetUsers request")
 	return resp, count, nil
 }
 
-func (us *UserService) GetUser(userId string) (*models.User, error) {
+func (us *UserService) GetUser(requestId string, userId string) (*models.User, error) {
 
 	bt := time.Now()
-	logrus.WithField("time_start", bt).WithField("userId", userId).Info("Start GetUser request")
+	us.m.AddHTTPIncomingRequests("/v1/api/user/{user_id}")
+	logrus.WithField("request_id", requestId).WithField("time_start", bt).WithField("userId", userId).Info("Start GetUser request")
 	resp, err := us.s.GetUser(userId)
 	if err != nil {
-		logrus.Errorf("Error in GetUser: %s", err)
+		us.m.AddHTTPIncomingResponses("/v1/api/user/{user_id}", http.StatusInternalServerError, time.Since(bt))
+		logrus.Errorf("request_id: %s Error in GetUser: %s", requestId, err)
 		return resp, err
 	}
-	logrus.WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish GetUser request")
+	us.m.AddHTTPIncomingResponses("/v1/api/user/{user_id}", http.StatusOK, time.Since(bt))
+	logrus.WithField("request_id", requestId).WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish GetUser request")
 	return resp, nil
 }
 
-func (us *UserService) DeleteUser(userId string) error {
+func (us *UserService) DeleteUser(requestId string, userId string) error {
 	bt := time.Now()
-	logrus.WithField("time_start", bt).Info("Start DeleteUser request")
+	us.m.AddHTTPIncomingRequests("/v1/api/user")
+	logrus.WithField("request_id", requestId).WithField("time_start", bt).Info("Start DeleteUser request")
 	err := us.s.DeleteUser(userId)
 	if err != nil {
-		logrus.Errorf("Error in DeleteUser: %s", err)
+		us.m.AddHTTPIncomingResponses("/v1/api/user/{user_id}", http.StatusInternalServerError, time.Since(bt))
+		logrus.Errorf("request_id: %s Error in DeleteUser: %s", requestId, err)
 		return err
 	}
-	logrus.WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish DeleteUser request")
+	us.m.AddHTTPIncomingResponses("/v1/api/user/{user_id}", http.StatusOK, time.Since(bt))
+	logrus.WithField("request_id", requestId).WithField("time_finish", time.Now()).WithField("durations", time.Since(bt)).Info("Finish DeleteUser request")
 	return nil
 }

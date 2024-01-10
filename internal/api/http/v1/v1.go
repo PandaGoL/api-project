@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/PandaGoL/api-project/internal/services"
 	"github.com/gorilla/mux"
 )
@@ -13,16 +15,16 @@ type Router struct {
 }
 
 // InitAPI - функция инициализирует HTTP API версии 1
-func InitAPI(mainRouter *mux.Router, s services.UserService) {
+func InitAPI(mainRouter *mux.Router, s services.UserService, middleware func(next http.Handler) http.Handler) {
 	sr := &Router{
 		mainRouter: mainRouter,
 		router:     mainRouter.PathPrefix("/v1").Subrouter(),
 		Service:    s,
 	}
+	sr.router.Use(middleware)
 
-	sr.router.HandleFunc("/api/users", sr.AddOrUpdateUser).Methods("POST")
+	sr.router.HandleFunc("/api/adduser", sr.AddOrUpdateUser).Methods("POST")
 	sr.router.HandleFunc("/api/users", sr.GetUsers).Methods("Get")
-	sr.router.HandleFunc("/api/user", sr.GetUser).Methods("Get")
+	sr.router.HandleFunc("/api/user/{user_id}", sr.GetUser).Methods("Get")
 	sr.router.HandleFunc("/api/user", sr.DeleteUser).Methods("Delete")
-
 }

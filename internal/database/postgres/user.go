@@ -3,15 +3,20 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/PandaGoL/api-project/internal/database/postgres/models"
+	"github.com/PandaGoL/api-project/internal/database/postgres/types"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	uuid "github.com/satori/go.uuid"
 )
 
 func (pgs *PgStorage) AddOrUpdateUser(user models.User) (scanUser *models.User, err error) {
 
 	// 0. Подготовительные операции
+	bt := time.Now()
+	requestType := "add_or_update_user"
 	if user.UserID == "" {
 		user.UserID = uuid.NewV4().String()
 	}
@@ -43,17 +48,21 @@ func (pgs *PgStorage) AddOrUpdateUser(user models.User) (scanUser *models.User, 
 	//3. Статус
 	switch err {
 	case nil:
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return scanUser, nil
 	case pgx.ErrNoRows:
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return nil, nil
 	default:
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Failure, time.Since(bt))
 		return nil, err
 	}
 }
 
 func (pgs *PgStorage) GetUsers() (users []*models.User, count int, err error) {
-	// 0. Подготовительные операции
-	//bt := time.Now()
+	//0. Подготовительные операции
+	bt := time.Now()
+	requestType := "get_users"
 	// 1. Подготовка запроса
 	// 1.1 Базовый шаблон>
 	template := `SELECT %s FROM myproject.users`
@@ -66,6 +75,7 @@ func (pgs *PgStorage) GetUsers() (users []*models.User, count int, err error) {
 	// 3. Запрос
 	rows, err := pgs.pool.Query(ctx1, sql)
 	if err != nil {
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Failure, time.Since(bt))
 		return nil, 0, err
 	}
 	defer rows.Close()
@@ -92,15 +102,18 @@ func (pgs *PgStorage) GetUsers() (users []*models.User, count int, err error) {
 	err = row.Scan(&count)
 	switch err {
 	case nil:
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return
 	default:
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Failure, time.Since(bt))
 		return nil, 0, err
 	}
 }
 
 func (pgs *PgStorage) GetUser(userID string) (user *models.User, err error) {
 	// 0. Подготовительные операции
-	//bt := time.Now()
+	bt := time.Now()
+	requestType := "get_user"
 
 	// 1. Подготовка запроса
 	template := `SELECT %s FROM myproject.users WHERE user_id = $1`
@@ -118,20 +131,21 @@ func (pgs *PgStorage) GetUser(userID string) (user *models.User, err error) {
 	err = row.Scan(scanPartner.GetFields()...)
 	switch err {
 	case nil:
-		//TODO метрики
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return scanPartner, nil
 	case pgx.ErrNoRows:
-		//TODO метрики
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return nil, nil
 	default:
-		//TODO метрики
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Failure, time.Since(bt))
 		return nil, err
 	}
 }
 
 func (pgs *PgStorage) DeleteUser(userID string) error {
 	// 0. Подготовительные операции
-	//bt := time.Now()
+	bt := time.Now()
+	requestType := "delete_user"
 
 	// 1. Подготовка запроса
 	template := `DELETE FROM myproject.users WHERE user_id = $1`
@@ -146,13 +160,17 @@ func (pgs *PgStorage) DeleteUser(userID string) error {
 	//4. Статус
 	switch err {
 	case nil:
-		//TODO метрики
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return nil
 	case pgx.ErrNoRows:
-		//TODO метрики
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Success, time.Since(bt))
 		return nil
 	default:
-		//TODO метрики
+		pgs.metrics.AddDBRequests(ModuleName, requestType, types.Failure, time.Since(bt))
 		return err
 	}
+}
+
+func (pgs *PgStorage) GetPool() *pgxpool.Pool {
+	return pgs.pool
 }
