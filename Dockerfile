@@ -1,5 +1,5 @@
 # Start from golang base image
-FROM golang:alpine AS builder
+FROM golang:alpine
 
 # Install git.
 # Git is required for fetching the dependencies.
@@ -13,27 +13,13 @@ WORKDIR /app
 COPY . .
 
 # Download all the dependencies
-RUN go get -d -v ./...
-
-# Install the package
-RUN go install -v ./...
-
-# Download all the dependencies
 RUN go mod tidy
 
 # Build the Go app
 RUN go build -o app ./cmd/server
 
-FROM alpine
-
-COPY --from=builder app/app /
-COPY --from=builder app/.env /
-COPY internal/config/ /internal/config/
-
 # Expose port 8080 to the outside world
-EXPOSE 8000
+EXPOSE 8080
 
-RUN chmod 777 ./app
-
-# # Run the executable
-ENTRYPOINT [ "app", "-config", "api-project-dev"]
+# Run the executable
+ENTRYPOINT [ "./app", "-config", "api-project-dev"]

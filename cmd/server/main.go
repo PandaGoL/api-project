@@ -16,6 +16,7 @@ import (
 	"github.com/PandaGoL/api-project/pkg/options"
 	"github.com/PandaGoL/api-project/pkg/recovery"
 	"github.com/PandaGoL/api-project/pkg/syslog"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,9 +34,9 @@ var (
 )
 
 func init() {
-	// if err := godotenv.Load(); err != nil {
-	// 	log.Warn(".env file not found")
-	// }
+	if err := godotenv.Load(); err != nil {
+		log.Warn(".env file not found")
+	}
 	flag.StringVar(&configName, "config", "api-project", "configuration file name")
 	exitSignal = make(chan bool)
 }
@@ -78,8 +79,6 @@ func Run() error {
 	go func(srv *api.Server) {
 		if err := srv.Serve(); err != nil && err != http.ErrServerClosed {
 			log.WithError(err).Fatal("Unable to server HTTP API")
-		} else if err == http.ErrServerClosed {
-			log.Infof("HTTP server closed")
 		}
 	}(apiServer)
 
