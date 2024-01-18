@@ -17,10 +17,10 @@ type PgStorage struct {
 	conf    *pgxpool.Config
 	pool    *pgxpool.Pool
 	options *types.Options
-	metrics metrics.IDatabaseMetrics
+	metrics metrics.DatabaseMetrics
 }
 
-func New(opt *types.Options, m metrics.IDatabaseMetrics) (pgs *PgStorage, err error) {
+func New(opt *types.Options, m metrics.DatabaseMetrics) (pgs *PgStorage, err error) {
 	logrus.Info("Start connect to db")
 	if opt.MaxOpenConnections < 1 {
 		return nil, errors.New("MaxOpenConnections < 1")

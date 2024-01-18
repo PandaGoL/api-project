@@ -5,30 +5,30 @@ import (
 )
 
 // IMetrics - Главный интерфейс метрик.
-type IMetrics interface {
-	IAppMetrics
-	IHTTPMetrics
-	IDatabaseMetrics
-	IPanic
+type Metrics interface {
+	AppMetrics
+	HTTPMetrics
+	DatabaseMetrics
+	Panic
 }
 
 // IAppMetrics - Интерфейс метрик приложения
-type IAppMetrics interface {
+type AppMetrics interface {
 	SetApplicationInfo(commit, branch, version, buildDate string)
 }
 
 // IHTTPMetrics - интерфейс HTTP метрик.
-type IHTTPMetrics interface {
+type HTTPMetrics interface {
 	AddHTTPIncomingRequests(route string)
 	AddHTTPIncomingResponses(route string, status int, dur time.Duration)
 }
 
 // IDatabaseMetrics - интерфейс метрик хранилища.
-type IDatabaseMetrics interface {
+type DatabaseMetrics interface {
 	AddDBRequests(store, query, status string, dur time.Duration)
 }
 
 // IPanic - Интерфейс метрик паник сервиса
-type IPanic interface {
+type Panic interface {
 	AddPanic(status string)
 }

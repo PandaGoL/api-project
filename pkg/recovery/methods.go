@@ -15,11 +15,11 @@ var (
 type module struct {
 	signal     chan bool
 	picnickers []Panickier
-	metrics    metrics.IMetrics
+	metrics    metrics.Metrics
 }
 
 // CreateRecovery - функция создает экземляр сервиса восстановления
-func CreateRecovery(sig chan bool, metrics metrics.IMetrics) Recovery {
+func CreateRecovery(sig chan bool, metrics metrics.Metrics) Recovery {
 	p := &module{
 		metrics:    metrics,
 		picnickers: make([]Panickier, 1),
@@ -29,11 +29,6 @@ func CreateRecovery(sig chan bool, metrics metrics.IMetrics) Recovery {
 	}
 	logrus.Warn("Create Recovery, initialization successfully")
 	return p
-}
-
-// AddModule - установка модуля восстановления
-func (p *module) AddModule(panickier Panickier) {
-	p.picnickers = append(p.picnickers, panickier)
 }
 
 // Do - функция отлавливает паники и выводит сообщения в лог

@@ -5,11 +5,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func New(namespace string) IMetrics {
+func New(namespace string) Metrics {
 
-	var metrics IMetrics
-
-	metrics = prometheus.NewMetrics(namespace)
+	metrics := prometheus.NewMetrics(namespace)
 
 	log.Warn("Metrics initialization successfully")
 

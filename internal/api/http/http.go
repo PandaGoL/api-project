@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/PandaGoL/api-project/internal/api/http/types"
 	v1 "github.com/PandaGoL/api-project/internal/api/http/v1"
 	"github.com/PandaGoL/api-project/internal/services"
 	"github.com/PandaGoL/api-project/pkg/options"
@@ -75,7 +76,7 @@ func (s *Server) middlewareRequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			requestID := uuid.NewV4().String()
-			r = r.WithContext(context.WithValue(r.Context(), "request_id", requestID))
+			r = r.WithContext(context.WithValue(r.Context(), types.RequestId, requestID))
 			next.ServeHTTP(w, r)
 		},
 	)

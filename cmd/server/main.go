@@ -16,6 +16,7 @@ import (
 	"github.com/PandaGoL/api-project/pkg/options"
 	"github.com/PandaGoL/api-project/pkg/recovery"
 	"github.com/PandaGoL/api-project/pkg/syslog"
+	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,9 +34,9 @@ var (
 )
 
 func init() {
-	// if err := godotenv.Load(); err != nil {
-	// 	log.Warn(".env file not found")
-	// }
+	if err := godotenv.Load(); err != nil {
+		log.Warn(".env file not found")
+	}
 	flag.StringVar(&configName, "config", "api-project", "configuration file name")
 	exitSignal = make(chan bool)
 }
@@ -57,7 +58,7 @@ func Run() error {
 
 	metrics := m.New(applicationName)
 
-	_ = recovery.CreateRecovery(nil, metrics)
+	recovery := recovery.CreateRecovery(nil, metrics)
 
 	db, err := postgres.New(opt.DB, metrics)
 	if err != nil {
@@ -71,15 +72,17 @@ func Run() error {
 		return nil
 	}
 
-	userService := user.NewUserService(db, metrics)
+	userService := user.NewUserService(db, metrics, recovery)
 	systemService := system.Init(db.GetPool())
 
 	apiServer = api.Init(userService, systemService)
-	go func(srv *api.Server) {
-		if err := srv.Serve(); err != nil && err != http.ErrServerClosed {
+	go func() {
+		if err := apiServer.Serve(); err != nil && err != http.ErrServerClosed {
 			log.WithError(err).Fatal("Unable to server HTTP API")
+		} else if err == http.ErrServerClosed {
+			log.Infof("HTTP server closed")
 		}
-	}(apiServer)
+	}()
 
 	time.Sleep(time.Second * 1)
 	log.Infof("HTTP API server started on \"%s\"", options.Get().APIAddr)

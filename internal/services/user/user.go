@@ -7,12 +7,14 @@ import (
 	"github.com/PandaGoL/api-project/internal/database"
 	"github.com/PandaGoL/api-project/internal/database/postgres/models"
 	"github.com/PandaGoL/api-project/internal/metrics"
+	"github.com/PandaGoL/api-project/pkg/recovery"
 	"github.com/sirupsen/logrus"
 )
 
 type UserService struct {
-	s database.Storage
-	m metrics.IMetrics
+	s        database.Storage
+	m        metrics.Metrics
+	recovery recovery.Recovery
 }
 
 type User struct {
@@ -24,10 +26,11 @@ type User struct {
 	Phone     string
 }
 
-func NewUserService(db database.Storage, m metrics.IMetrics) *UserService {
+func NewUserService(db database.Storage, m metrics.Metrics, r recovery.Recovery) *UserService {
 	us := &UserService{
-		s: db,
-		m: m,
+		s:        db,
+		m:        m,
+		recovery: r,
 	}
 	return us
 }
@@ -48,6 +51,9 @@ func (us *UserService) AddOrUpdateUser(requestId string, user models.User) (*mod
 	us.m.AddHTTPIncomingRequests("/v1/api/adduser")
 
 	logrus.WithField("request_id", requestId).WithField("time_start", bt).WithFields(user.ToMap()).Info("Start AddorUpdateUser request: ")
+
+	defer us.recovery.Do()
+
 	resp := new(models.User)
 	resp, err := us.s.AddOrUpdateUser(user)
 	if err != nil {
@@ -64,6 +70,9 @@ func (us *UserService) GetUsers(requestId string) ([]*models.User, int, error) {
 	bt := time.Now()
 	us.m.AddHTTPIncomingRequests("/v1/api/users")
 	logrus.WithField("request_id", requestId).WithField("time_start", bt).Info("Start GetUsers request")
+
+	defer us.recovery.Do()
+
 	resp, count, err := us.s.GetUsers()
 	if err != nil {
 		us.m.AddHTTPIncomingResponses("/v1/api/users", http.StatusInternalServerError, time.Since(bt))
@@ -80,6 +89,9 @@ func (us *UserService) GetUser(requestId string, userId string) (*models.User, e
 	bt := time.Now()
 	us.m.AddHTTPIncomingRequests("/v1/api/user/{user_id}")
 	logrus.WithField("request_id", requestId).WithField("time_start", bt).WithField("userId", userId).Info("Start GetUser request")
+
+	defer us.recovery.Do()
+
 	resp, err := us.s.GetUser(userId)
 	if err != nil {
 		us.m.AddHTTPIncomingResponses("/v1/api/user/{user_id}", http.StatusInternalServerError, time.Since(bt))
@@ -95,6 +107,9 @@ func (us *UserService) DeleteUser(requestId string, userId string) error {
 	bt := time.Now()
 	us.m.AddHTTPIncomingRequests("/v1/api/user")
 	logrus.WithField("request_id", requestId).WithField("time_start", bt).Info("Start DeleteUser request")
+
+	defer us.recovery.Do()
+
 	err := us.s.DeleteUser(userId)
 	if err != nil {
 		us.m.AddHTTPIncomingResponses("/v1/api/user/{user_id}", http.StatusInternalServerError, time.Since(bt))
